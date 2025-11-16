@@ -1,26 +1,28 @@
 #include <string>
+#include <string_view>
 #include <iostream>
 #include <cstdlib>
 
 #include "../radix_tree.hpp"
 
+using namespace std::string_view_literals;
 radix_tree<std::string, int> tree;
 
 void insert() {
-    tree["apache"]    = 0;
-    tree["afford"]    = 1;
-    tree["available"] = 2;
-    tree["affair"]    = 3;
-    tree["avenger"]   = 4;
-    tree["binary"]    = 5;
-    tree["bind"]      = 6;
-    tree["brother"]   = 7;
-    tree["brace"]     = 8;
-    tree["blind"]     = 9;
-    tree["bro"]       = 10;
+    tree["apache"sv]    = 0;
+    tree["afford"sv]    = 1;
+    tree["available"sv] = 2;
+    tree["affair"sv]    = 3;
+    tree["avenger"sv]   = 4;
+    tree["binary"sv]    = 5;
+    tree["bind"sv]      = 6;
+    tree["brother"sv]   = 7;
+    tree["brace"sv]     = 8;
+    tree["blind"sv]     = 9;
+    tree["bro"sv]       = 10;
 }
 
-void longest_match(const std::string &key)
+void longest_match(std::string_view key)
 {
     radix_tree<std::string, int>::iterator it;
 
@@ -35,7 +37,7 @@ void longest_match(const std::string &key)
     }
 }
 
-void prefix_match(const std::string& key)
+void prefix_match(std::string_view key)
 {
     std::vector<radix_tree<std::string, int>::iterator> vec;
     std::vector<radix_tree<std::string, int>::iterator>::iterator it;
@@ -49,7 +51,7 @@ void prefix_match(const std::string& key)
     }
 }
 
-void prefix_match2(const std::string& key)
+void prefix_match2(std::string_view key)
 {
     auto pit = tree.prefix_range(key);
 
@@ -60,7 +62,7 @@ void prefix_match2(const std::string& key)
     }
 }
 
-void greedy_match(const std::string& key)
+void greedy_match(std::string_view key)
 {
     std::vector<radix_tree<std::string, int>::iterator> vec;
     std::vector<radix_tree<std::string, int>::iterator>::iterator it;
@@ -87,20 +89,20 @@ int main()
 {
     insert();
 
-    longest_match("binder");
-    longest_match("bracelet");
-    longest_match("apple");
+    longest_match("binder"sv);
+    longest_match("bracelet"sv);
+    longest_match("apple"sv);
 
-    prefix_match("aff");
-    prefix_match2("aff");
-    prefix_match("bi");
-    prefix_match2("bi");
-    prefix_match("a");
-    prefix_match2("a");
+    prefix_match("aff"sv);
+    prefix_match2("aff"sv);
+    prefix_match("bi"sv);
+    prefix_match2("bi"sv);
+    prefix_match("a"sv);
+    prefix_match2("a"sv);
 
-    greedy_match("avoid");
-    greedy_match("bring");
-    greedy_match("attack");
+    greedy_match("avoid"sv);
+    greedy_match("bring"sv);
+    greedy_match("attack"sv);
 
     traverse();
 

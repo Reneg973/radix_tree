@@ -3,6 +3,7 @@
 
 #include "radix_tree_it.hpp"
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -50,15 +51,21 @@ private:
 
     ~radix_tree_node()
     {
-        for (auto& child : m_children) {
-            delete child.second;
-        }
+        std::ranges::for_each(m_children, [](auto& vt)
+            {
+                delete vt.second;
+            });
     }
 
     void AddChild(radix_tree_node* node)
     {
         m_children[node->m_key] = node;
-	}
+    }
+    template<typename T>
+    void EraseChild(T child)
+    {
+        m_children.erase(child);
+    }
 
     MapType m_children;
     ThisType *m_parent;
