@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.5)
 
 project(radix-tree)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 install(FILES radix_tree.hpp radix_tree_it.hpp radix_tree_node.hpp DESTINATION include/radix_tree)
@@ -29,3 +32,7 @@ set (CPACK_STRIP_FILES "")
 set (CPACK_GENERATOR "DEB")
 set (CPACK_DEBIAN_PACKAGE_MAINTAINER "nobody")
 include(CPack)
+
+add_executable(example1 ./examples/example1.cpp)
+
+add_executable(example2 ./examples/example2.cpp)
