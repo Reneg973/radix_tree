@@ -20,7 +20,7 @@ void insert() {
     tree["bro"]       = 10;
 }
 
-void longest_match(std::string key)
+void longest_match(const std::string &key)
 {
     radix_tree<std::string, int>::iterator it;
 
@@ -35,7 +35,7 @@ void longest_match(std::string key)
     }
 }
 
-void prefix_match(std::string key)
+void prefix_match(const std::string& key)
 {
     std::vector<radix_tree<std::string, int>::iterator> vec;
     std::vector<radix_tree<std::string, int>::iterator>::iterator it;
@@ -49,7 +49,18 @@ void prefix_match(std::string key)
     }
 }
 
-void greedy_match(std::string key)
+void prefix_match2(const std::string& key)
+{
+    auto pit = tree.prefix_range(key);
+
+    std::cout << "prefix_range(\"" << key << "\"):" << std::endl;
+
+    for (auto it = pit.first; it != pit.second; ++it) {
+        std::cout << "    " << it->first << ", " << it->second << std::endl;
+    }
+}
+
+void greedy_match(const std::string& key)
 {
     std::vector<radix_tree<std::string, int>::iterator> vec;
     std::vector<radix_tree<std::string, int>::iterator>::iterator it;
@@ -81,8 +92,11 @@ int main()
     longest_match("apple");
 
     prefix_match("aff");
+    prefix_match2("aff");
     prefix_match("bi");
+    prefix_match2("bi");
     prefix_match("a");
+    prefix_match2("a");
 
     greedy_match("avoid");
     greedy_match("bring");

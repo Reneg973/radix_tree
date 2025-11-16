@@ -85,6 +85,7 @@ public:
     void prefix_match(const K &key, std::vector<iterator> &vec);
     void greedy_match(const K &key,  std::vector<iterator> &vec);
     iterator longest_match(const K &key);
+    std::pair<iterator, iterator> prefix_range(const K& key);
 
     T& operator[] (const K &lhs);
 
@@ -129,6 +130,32 @@ void radix_tree<K, T, Compare>::prefix_match(const K &key, std::vector<iterator>
         return;
 
     greedy_match(node, vec);
+}
+
+template <typename K, typename T, typename Compare>
+std::pair<typename radix_tree<K, T, Compare>::iterator, typename radix_tree<K, T, Compare>::iterator>
+radix_tree<K, T, Compare>::prefix_range(const K& key)
+{
+    // Find the node that corresponds to the search path for `key`
+    auto node = find_node(key, m_root, 0);
+
+    // If find_node returned a leaf, the subtree of matches is the leaf's parent
+    if (node->m_is_leaf)
+        node = node->m_parent;
+
+    // Verify the path actually matches the given prefix
+    auto len = radix_length(key) - node->m_depth;
+    if (radix_substr(key, node->m_depth, len) != radix_substr(node->m_key, 0, len))
+        return { end(), end() }; // no matches
+
+    // last: the rightmost leaf under `node` -> one-past-last is ++last_it
+    auto* last_node = node;
+    for (; not last_node->m_is_leaf; last_node = last_node->m_children.rbegin()->second) {
+        if (last_node->m_children.empty())
+            break;
+    }
+
+    return { iterator(begin(*node)), ++iterator(last_node) };
 }
 
 template <typename K, typename T, typename Compare>
