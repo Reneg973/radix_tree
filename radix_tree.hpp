@@ -9,18 +9,19 @@
 #include <utility>
 #include <vector>
 
-template<typename K>
-K radix_substr(const K &key, int begin, int num);
+template<typename K, typename R = K>
+R radix_substr(const K &key, size_t begin, size_t num);
 
-template<>
-inline std::string radix_substr<std::string>(const std::string &key, int begin, int num)
-{
-    return key.substr(begin, num);
-}
+//template<>
+//inline std::string radix_substr<std::string>(const std::string &key, size_t begin, size_t num)
+//{
+//    return key.substr(begin, num);
+//}
 
-inline std::string_view radix_substr_v(const std::string_view& key, int begin, int num)
+inline std::string_view radix_substr(const std::string& key, size_t begin, size_t num)
 {
-    return key.substr(begin, num);
+    std::string_view sv(key);
+    return sv.substr(begin, num);
 }
 
 template<typename K>
@@ -33,18 +34,18 @@ inline std::string radix_join<std::string>(const std::string &key1, const std::s
 }
 
 template<typename K>
-int radix_length(const K &key);
+size_t radix_length(const K &key);
 
 template<>
-inline int radix_length<std::string>(const std::string &key)
+inline size_t radix_length<std::string>(const std::string &key)
 {
-    return static_cast<int>(key.size());
+    return key.size();
 }
 
 template<>
-inline int radix_length<std::string_view>(const std::string_view& key)
+inline size_t radix_length<std::string_view>(const std::string_view& key)
 {
-    return static_cast<int>(key.size());
+    return key.size();
 }
 
 template <typename K, typename T, typename Compare>
@@ -57,10 +58,10 @@ public:
     typedef std::size_t           size_type;
 
     radix_tree()
-        : m_predicate(Compare()), m_root(new radix_tree_node<K, T, Compare>(m_predicate))
+        : m_predicate(Compare()), m_root(m_predicate)
     { }
     explicit radix_tree(Compare&& pred)
-        : m_predicate(std::forward<Compare>(pred)), m_root(new radix_tree_node<K, T, Compare>(m_predicate))
+        : m_predicate(std::forward<Compare>(pred)), m_root(m_predicate)
     { }
 
     size_type size() const {
@@ -70,8 +71,7 @@ public:
         return m_size == 0;
     }
     void clear() {
-        delete m_root;
-        m_root = nullptr;
+        m_root = {};
         m_size = 0;
     }
 
@@ -103,10 +103,10 @@ public:
 private:
     size_type m_size = 0;
     Compare m_predicate;
-    radix_tree_node<K, T, Compare> *m_root;
+    radix_tree_node<K, T, Compare> m_root;
 
     radix_tree_node<K, T, Compare>* begin(radix_tree_node<K, T, Compare> &node);
-    radix_tree_node<K, T, Compare>* find_node(const K &key, radix_tree_node<K, T, Compare> &node, int depth);
+    radix_tree_node<K, T, Compare>* find_node(const K &key, radix_tree_node<K, T, Compare> &node, uint32_t depth);
     radix_tree_node<K, T, Compare>* append(radix_tree_node<K, T, Compare> *parent, const value_type &val);
     radix_tree_node<K, T, Compare>* prepend(radix_tree_node<K, T, Compare> *node, const value_type &val);
     void greedy_match(radix_tree_node<K, T, Compare> *node, std::vector<iterator> &vec);
@@ -120,12 +120,12 @@ void radix_tree<K, T, Compare>::prefix_match(const K &key, std::vector<iterator>
 {
     vec.clear();
 
-    auto node = find_node(key, *m_root, 0);
+    auto node = find_node(key, m_root, 0);
     if (node->m_is_leaf)
         node = node->m_parent;
 
-    int len = radix_length(key) - node->m_depth;
-    if (radix_substr_v(key, node->m_depth, len) != radix_substr_v(node->m_key, 0, len))
+    auto len = radix_length(key) - node->m_depth;
+    if (radix_substr(key, node->m_depth, len) != radix_substr(node->m_key, 0, len))
         return;
 
     greedy_match(node, vec);
@@ -134,11 +134,11 @@ void radix_tree<K, T, Compare>::prefix_match(const K &key, std::vector<iterator>
 template <typename K, typename T, typename Compare>
 typename radix_tree<K, T, Compare>::iterator radix_tree<K, T, Compare>::longest_match(const K &key)
 {
-    auto node = find_node(key, *m_root, 0);
+    auto node = find_node(key, m_root, 0);
     if (node->m_is_leaf)
         return iterator(node);
 
-    if (radix_substr_v(key, node->m_depth, radix_length(node->m_key)) != node->m_key)
+    if (radix_substr(key, node->m_depth, radix_length(node->m_key)) != node->m_key)
         node = node->m_parent;
 
     for (; node; node = node->m_parent) {
@@ -159,7 +159,7 @@ radix_tree<K, T, Compare>::iterator radix_tree<K, T, Compare>::end()
 template <typename K, typename T, typename Compare>
 radix_tree<K, T, Compare>::iterator radix_tree<K, T, Compare>::begin()
 {
-    return iterator(m_size ? begin(*m_root) : nullptr);
+    return iterator(m_size ? begin(m_root) : nullptr);
 }
 
 template <typename K, typename T, typename Compare>
@@ -191,7 +191,7 @@ void radix_tree<K, T, Compare>::greedy_match(const K &key, std::vector<iterator>
 {
     vec.clear();
 
-    auto node = find_node(key, *m_root, 0);
+    auto node = find_node(key, m_root, 0);
 
     if (node->m_is_leaf)
         node = node->m_parent;
@@ -224,7 +224,7 @@ radix_tree_it<K, T, Compare> radix_tree<K, T, Compare>::erase(iterator it)
 template <typename K, typename T, typename Compare>
 bool radix_tree<K, T, Compare>::erase(const K &key)
 {
-    auto child = find_node(key, *m_root, 0);
+    auto child = find_node(key, m_root, 0);
     if (not child->m_is_leaf)
         return false;
 
@@ -235,7 +235,7 @@ bool radix_tree<K, T, Compare>::erase(const K &key)
 
     --m_size;
 
-    if (parent == m_root)
+    if (parent == &m_root)
         return true;
 
     if (parent->m_children.size() > 1)
@@ -250,7 +250,7 @@ bool radix_tree<K, T, Compare>::erase(const K &key)
         grandparent = parent;
     }
 
-    if (grandparent == m_root) {
+    if (grandparent == &m_root) {
         return true;
     }
 
@@ -268,7 +268,7 @@ bool radix_tree<K, T, Compare>::erase(const K &key)
         grandparent->m_children.erase(it);
 
         grandparent->m_parent->m_children.erase(grandparent->m_key);
-        grandparent->m_parent->m_children[uncle->m_key] = uncle;
+        grandparent->m_parent->AddChild(uncle);
 
         delete grandparent;
     }
@@ -286,22 +286,22 @@ radix_tree<K, T, Compare>::append(radix_tree_node<K, T, Compare> *parent, const 
 
     if (len == 0) {
         auto node_c = new radix_tree_node<K, T, Compare>(parent, K{}, val, m_predicate);
-        node_c->m_depth   = depth;
+        node_c->m_depth   = static_cast<uint32_t>(depth);
         node_c->m_is_leaf = true;
 
-        parent->m_children[node_c->m_key] = node_c;
+        parent->AddChild(node_c);
         return node_c;
     }
 
-    auto node_c = new radix_tree_node<K, T, Compare>(parent, radix_substr(val.first, depth, len), val, m_predicate);
-    node_c->m_depth  = depth;
-    parent->m_children[node_c->m_key] = node_c;
+    auto node_c = new radix_tree_node<K, T, Compare>(parent, K(radix_substr(val.first, depth, len)), val, m_predicate);
+    node_c->m_depth  = static_cast<uint32_t>(depth);
+    parent->AddChild(node_c);
 
     auto node_cc = new radix_tree_node<K, T, Compare>(val, m_predicate);
-    node_cc->m_depth   = depth + len;
+    node_cc->m_depth   = static_cast<uint32_t>(depth + len);
     node_cc->m_parent  = node_c;
     node_cc->m_is_leaf = true;
-    node_c->m_children[node_cc->m_key] = node_cc;
+    node_c->AddChild(node_cc);
 
     return node_cc;
 }
@@ -309,11 +309,11 @@ radix_tree<K, T, Compare>::append(radix_tree_node<K, T, Compare> *parent, const 
 template <typename K, typename T, typename Compare>
 radix_tree_node<K, T, Compare>* radix_tree<K, T, Compare>::prepend(radix_tree_node<K, T, Compare> *node, const value_type &val)
 {
-    int len1 = radix_length(node->m_key);
-    int len2 = radix_length(val.first) - node->m_depth;
-
-    int count;
-    for (count = 0; count < len1 && count < len2; count++) {
+    auto len1 = radix_length(node->m_key);
+    auto len2 = radix_length(val.first) - node->m_depth;
+    auto l = std::min(len1, len2);
+    decltype(l) count;
+    for (count = 0; count < l; count++) {
         if (not (node->m_key[count] == val.first[count + node->m_depth]) )
             break;
     }
@@ -322,66 +322,60 @@ radix_tree_node<K, T, Compare>* radix_tree<K, T, Compare>::prepend(radix_tree_no
 
     node->m_parent->m_children.erase(node->m_key);
 
-    radix_tree_node<K, T, Compare> *node_a = new radix_tree_node<K, T, Compare>(m_predicate);
-
-    node_a->m_parent = node->m_parent;
-    node_a->m_key    = radix_substr(node->m_key, 0, count);
+    auto* node_a = new radix_tree_node<K, T, Compare>(node->m_parent, K(radix_substr(node->m_key, 0, count)), m_predicate);
     node_a->m_depth  = node->m_depth;
-    node_a->m_parent->m_children[node_a->m_key] = node_a;
+    node_a->m_parent->AddChild(node_a);
 
 
-    node->m_depth  += count;
+    node->m_depth  += static_cast<uint32_t>(count);
     node->m_parent  = node_a;
     node->m_key     = radix_substr(node->m_key, count, len1 - count);
-    node->m_parent->m_children[node->m_key] = node;
+    node->m_parent->AddChild(node);
 
     if (count == len2) {
-        auto node_b = new radix_tree_node<K, T, Compare>(val, m_predicate);
-
-        node_b->m_parent  = node_a;
-        node_b->m_depth   = node_a->m_depth + count;
+        auto node_b = new radix_tree_node<K, T, Compare>(node_a, K{}, val, m_predicate);
+        node_b->m_depth   = static_cast<uint32_t>(node_a->m_depth + count);
         node_b->m_is_leaf = true;
-        node_b->m_parent->m_children[node_b->m_key] = node_b;
+        node_b->m_parent->AddChild(node_b);
         return node_b;
-    } else {
-        auto node_b = new radix_tree_node<K, T, Compare>(node_a, radix_substr(val.first, node->m_depth, len2 - count), m_predicate);
-        node_b->m_depth  = node->m_depth;
-        node_b->m_parent->m_children[node_b->m_key] = node_b;
-
-        auto node_c = new radix_tree_node<K, T, Compare>(node_b, K{}, val, m_predicate);
-        node_c->m_depth   = radix_length(val.first);
-        node_c->m_is_leaf = true;
-        node_c->m_parent->m_children[node_c->m_key] = node_c;
-
-        return node_c;
     }
+
+    auto node_b = new radix_tree_node<K, T, Compare>(node_a, K(radix_substr(val.first, node->m_depth, len2 - count)), m_predicate);
+    node_b->m_depth  = node->m_depth;
+    node_b->m_parent->AddChild(node_b);
+
+    auto node_c = new radix_tree_node<K, T, Compare>(node_b, K{}, val, m_predicate);
+    node_c->m_depth   = static_cast<uint32_t>(radix_length(val.first));
+    node_c->m_is_leaf = true;
+    node_c->m_parent->AddChild(node_c);
+    return node_c;
 }
 
 template <typename K, typename T, typename Compare>
 std::pair<typename radix_tree<K, T, Compare>::iterator, bool>
-radix_tree<K, T, Compare>::insert(const value_type &val)
+radix_tree<K, T, Compare>::insert(const value_type& val)
 {
-    auto *node = find_node(val.first, *m_root, 0);
+    auto* node = find_node(val.first, m_root, 0);
 
     if (node->m_is_leaf) {
         return { node, false };
     }
 
     ++m_size;
-    if (node == m_root) {
-        return { append(m_root, val), true };
+    if (node == &m_root) {
+        return { append(node, val), true };
     }
 
-    if (radix_substr_v(val.first, node->m_depth, radix_length(node->m_key)) == node->m_key)
-        return { append(node, val), true };
-    return { prepend(node, val), true };
+    auto xpend = (radix_substr(val.first, node->m_depth, radix_length(node->m_key)) == node->m_key)
+                 ? &radix_tree<K, T, Compare>::append : &radix_tree<K, T, Compare>::prepend;
+    return { (this->*xpend)(node, val), true };
 }
 
 template <typename K, typename T, typename Compare>
 typename radix_tree<K, T, Compare>::iterator
 radix_tree<K, T, Compare>::find(const K &key)
 {
-    radix_tree_node<K, T, Compare> *node = find_node(key, *m_root, 0);
+    radix_tree_node<K, T, Compare> *node = find_node(key, m_root, 0);
 
     // if the node is a internal node, return NULL
     if (not node->m_is_leaf)
@@ -391,13 +385,13 @@ radix_tree<K, T, Compare>::find(const K &key)
 }
 
 template <typename K, typename T, typename Compare>
-radix_tree_node<K, T, Compare>* radix_tree<K, T, Compare>::find_node(const K &key, radix_tree_node<K, T, Compare> &node, int depth)
+radix_tree_node<K, T, Compare>* radix_tree<K, T, Compare>::find_node(const K &key, radix_tree_node<K, T, Compare> &node, uint32_t depth)
 {
     if (node.m_children.empty())
         return &node;
 
     typename radix_tree_node<K, T, Compare>::it_child it;
-    int len_key = radix_length(key) - depth;
+    auto len_key = radix_length(key) - depth;
 
     for (auto const& child : node.m_children) {
         if (len_key == 0) {
@@ -407,9 +401,9 @@ radix_tree_node<K, T, Compare>* radix_tree<K, T, Compare>::find_node(const K &ke
         }
 
         if (!child.second->m_is_leaf && key[depth] == child.first[0] ) {
-            int len_node = radix_length(child.first);
-            return (radix_substr_v(key, depth, len_node) == child.first)
-                ? find_node(key, *child.second, depth+len_node)
+            auto len_node = radix_length(child.first);
+            return (radix_substr(key, depth, len_node) == child.first)
+                ? find_node(key, *child.second, static_cast<uint32_t>(depth+len_node))
                 : child.second;
         }
     }

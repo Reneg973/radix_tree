@@ -55,12 +55,17 @@ private:
         }
     }
 
+    void AddChild(radix_tree_node* node)
+    {
+        m_children[node->m_key] = node;
+	}
+
     MapType m_children;
     ThisType *m_parent;
     std::optional<value_type> m_value; // not every node has a value
-    int m_depth = 0;
     K m_key;
     Compare& m_pred;
+    uint32_t m_depth = 0;
     bool m_is_leaf = false;
 };
 

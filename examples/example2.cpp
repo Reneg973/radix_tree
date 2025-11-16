@@ -1,7 +1,27 @@
 #include <iostream>
 #include <cstdlib>
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+
+// POSIX-like alias so your code compiles unchanged
+using in_addr_t = uint32_t;
+
+// inet_aton/inet_ntoa compatibility (Windows doesn't have inet_aton)
+static int inet_aton(const char* cp, in_addr* inp) {
+    return InetPtonA(AF_INET, cp, &inp->S_un.S_addr) == 1 ? 1 : 0;
+}
+//static char* inet_ntoa(in_addr in) {
+//    static char buf[INET_ADDRSTRLEN];
+//    InetNtopA(AF_INET, &in.S_un.S_addr, buf, sizeof(buf));
+//    return buf;
+//}
+#else
 #include <arpa/inet.h>
+#endif
 
 #include "../radix_tree.hpp"
 
@@ -12,7 +32,7 @@ public:
 
     rtentry() : addr(0), prefix_len(0) { }
 
-    in_addr_t operator[] (int n) const {
+    in_addr_t operator[] (uint32_t n) const {
         if (addr & (0x80000000 >> n))
             return 1;
         else
@@ -31,7 +51,7 @@ public:
     }
 };
 
-rtentry radix_substr(const rtentry &entry, int begin, int num)
+rtentry radix_substr(const rtentry &entry, size_t begin, size_t num)
 {
     rtentry   ret;
     in_addr_t mask;
@@ -61,7 +81,7 @@ rtentry radix_join(const rtentry &entry1, const rtentry &entry2)
     return ret;
 }
 
-int radix_length(const rtentry &entry)
+size_t radix_length(const rtentry &entry)
 {
     return entry.prefix_len;
 }
