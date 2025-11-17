@@ -24,14 +24,12 @@ void insert() {
 
 void longest_match(std::string_view key)
 {
-    radix_tree<std::string, int>::iterator it;
-
-    it = tree.longest_match(key);
+    auto p = tree.longest_match(key);
 
     std::cout << "longest_match(\"" << key << "\"):" << std::endl;
 
-    if (it != tree.end()) {
-        std::cout << "    " << it->first << ", " << it->second << std::endl;
+    if (!p.first.empty()) {
+        std::cout << "    " << p.first << ", " << p.second << std::endl;
     } else {
         std::cout << "    failed" << std::endl;
     }
@@ -47,7 +45,8 @@ void prefix_match(std::string_view key)
     std::cout << "prefix_match(\"" << key << "\"):" << std::endl;
 
     for (it = vec.begin(); it != vec.end(); ++it) {
-        std::cout << "    " << (*it)->first << ", " << (*it)->second << std::endl;
+        auto vt = (*it).GetValue();
+        std::cout << "    " << vt.first << ", " << vt.second << std::endl;
     }
 }
 
@@ -58,7 +57,8 @@ void prefix_match2(std::string_view key)
     std::cout << "prefix_range(\"" << key << "\"):" << std::endl;
 
     for (auto it = pit.first; it != pit.second; ++it) {
-        std::cout << "    " << it->first << ", " << it->second << std::endl;
+        auto vt = it.GetValue();
+        std::cout << "    " << vt.first << ", " << vt.second << std::endl;
     }
 }
 
@@ -72,7 +72,8 @@ void greedy_match(std::string_view key)
     std::cout << "greedy_match(\"" << key << "\"):" << std::endl;
 
     for (it = vec.begin(); it != vec.end(); ++it) {
-        std::cout << "    " << (*it)->first << ", " << (*it)->second << std::endl;
+        auto vt = (*it).GetValue();
+        std::cout << "    " << vt.first << ", " << vt.second << std::endl;
     }
 }
 
@@ -81,7 +82,8 @@ void traverse() {
 
     std::cout << "traverse:" << std::endl;
     for (it = tree.begin(); it != tree.end(); ++it) {
-        std::cout << "    " << it->first << ", " << it->second << std::endl;
+        auto v = it.GetValue();
+        std::cout << "    " << v.first << ", " << v.second << std::endl;
     }
 }
 
@@ -104,6 +106,11 @@ int main()
     greedy_match("bring"sv);
     greedy_match("attack"sv);
 
+    if (auto it = tree.find("avenger"sv); it != tree.end())
+    {
+        auto vt = it.GetValue();
+        std::cout << "found: " << vt.first << ", " << vt.second << std::endl;
+    }
     traverse();
 
     tree.erase("bro");

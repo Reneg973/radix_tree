@@ -1,49 +1,37 @@
-#ifndef RADIX_TREE_NODE_HPP
-#define RADIX_TREE_NODE_HPP
+#pragma once
 
 #include "radix_tree_it.hpp"
 
 #include <algorithm>
 #include <map>
-#include <optional>
-#include <string_view>
-
-template <typename T>
-struct as_view { using type = T; };
-template <>
-struct as_view<std::string> { using type = std::string_view; };
 
 template <typename K, typename T, typename Compare>
-class radix_tree_node {
+class radix_tree_node : public std::pair<K, T> {
     friend class radix_tree<K, T, Compare>;
     friend class radix_tree_it<K, T, Compare>;
 
+    using value_type = T;
+    using BaseType = std::pair<K, T>;
     using ThisType = radix_tree_node<K, T, Compare>;
-    using value_type = std::pair<const K, T>;
-    // the KV view type always has its corresponding lifetime managed by the original K stored in the node
-    using KV = typename as_view<K>::type;
-    using MapType = std::map<KV, ThisType*, Compare>;
-    using it_child = typename MapType::iterator;
+    // the map uses a view type aas its corresponding lifetime is managed by the K stored in the node
+    using MapType = std::map<typename as_view<K>::type, ThisType*, Compare>;
 
 private:
     radix_tree_node(Compare& pred)
-        : radix_tree_node(nullptr, K(), pred)
+        : radix_tree_node(nullptr, {}, pred)
     { }
-    radix_tree_node(const value_type& val, Compare& pred)
-        : radix_tree_node(nullptr, K(), val, pred)
+    radix_tree_node(const T& val, Compare& pred)
+        : radix_tree_node(nullptr, {}, val, pred)
     { }
     radix_tree_node(radix_tree_node* parent, const K& key, Compare& pred)
-        : m_children(pred)
+        : BaseType(key, {})
+        , m_children(pred)
         , m_parent(parent)
-        , m_key(key)
-        , m_pred(pred)
     { }
-    radix_tree_node(radix_tree_node* parent, const K& key, const value_type& val, Compare& pred)
-        : m_children(pred)
+    radix_tree_node(radix_tree_node* parent, const K& key, const T& val, Compare& pred)
+        : BaseType(key, val)
+        , m_children(pred)
         , m_parent(parent)
-        , m_value(val)
-        , m_key(key)
-        , m_pred(pred)
     { }
 
     radix_tree_node(const radix_tree_node&) = delete;
@@ -57,23 +45,19 @@ private:
             });
     }
 
-    void AddChild(radix_tree_node* node)
+    void add_child(radix_tree_node* node)
     {
-        m_children[node->m_key] = node;
+        m_children[node->first] = node;
     }
-    template<typename T>
-    void EraseChild(T child)
+
+    template<typename U>
+    void erase_child(U child)
     {
         m_children.erase(child);
     }
 
     MapType m_children;
     ThisType *m_parent;
-    std::optional<value_type> m_value; // not every node has a value
-    K m_key;
-    Compare& m_pred;
     uint32_t m_depth = 0;
     bool m_is_leaf = false;
 };
-
-#endif // RADIX_TREE_NODE_HPP

@@ -13,7 +13,13 @@ It's a header-only library. Just include it. See [examples](examples/).
 
 Develop
 =====
-Requirements: any C++98 compiler (`g++` or `clang++`), `cmake`
+Requirements: any C++20 compiler (`g++` or `clang++`), `cmake`
+Tested with CLang++ 17.0.0 on macOS 15
+Tested with VS2019 and VS2026 on Windows 11
+
+Comparing with original version
+=====
+- optimized memory usage
 
 ```
 ~/radix_tree $ mkdir build && cd build
